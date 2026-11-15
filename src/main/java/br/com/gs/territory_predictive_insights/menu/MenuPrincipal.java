@@ -217,13 +217,49 @@ public class MenuPrincipal implements CommandLineRunner {
     private void listarMedicoes() {
 
         System.out.println("\n--- HISTÓRICO DE MEDIÇÕES ---");
+        System.out.println("1 - Pluviômetro");
+        System.out.println("2 - Nível da água");
+        System.out.println("3 - Umidade do solo");
+        System.out.println("4 - Todas as medições");
+        System.out.println("0 - Voltar");
+        System.out.print("Escolha uma opção: ");
 
-        List<Medicao> medicoes = servico.listarTodasMedicoes();
+        int opcao = lerInteiro();
+
+        List<Medicao> medicoes;
+
+        switch (opcao) {
+
+            case 1:
+                medicoes = servico.listarMedicoesPorSensor("PLUVIOMETRO");
+                break;
+
+            case 2:
+                medicoes = servico.listarMedicoesPorSensor("SENSOR_NIVEL_AGUA");
+                break;
+
+            case 3:
+                medicoes = servico.listarMedicoesPorSensor("SENSOR_UMIDADE_SOLO");
+                break;
+
+            case 4:
+                medicoes = servico.listarTodasMedicoes();
+                break;
+
+            case 0:
+                return;
+
+            default:
+                System.out.println("Opção inválida.");
+                return;
+        }
 
         if (medicoes.isEmpty()) {
-            System.out.println("Nenhuma medição registrada.");
+            System.out.println("Nenhuma medição encontrada para essa opção.");
             return;
         }
+
+        System.out.println("\nTotal de medições encontradas: " + medicoes.size());
 
         for (Medicao medicao : medicoes) {
 

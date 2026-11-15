@@ -11,8 +11,11 @@ import br.com.gs.territory_predictive_insights.repository.MedicaoRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -30,6 +33,9 @@ class ServicoMonitoramentoTest {
         when(sensor.lerValor()).thenReturn(30.0);
         when(sensor.getTipo()).thenReturn("PLUVIOMETRO");
 
+        when(medicaoRepository.save(any(Medicao.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
         ServicoMonitoramento servico =
                 new ServicoMonitoramento(medicaoRepository, alertaRepository);
 
@@ -38,6 +44,7 @@ class ServicoMonitoramentoTest {
 
         // Assert
         assertEquals(30.0, resultado.getValor(), 0.001);
+        assertEquals("Centro", resultado.getRegiao());
 
         verify(medicaoRepository).save(any(Medicao.class));
         verify(alertaRepository, never()).save(any(Alerta.class));
@@ -65,28 +72,46 @@ class ServicoMonitoramentoTest {
     }
 
     @Test
-    void deveGerarAlertaCriticoQuandoMedicaoForElevada() throws Exception {
+    void deveGerarAlertaCriticoQuandoPrevisaoUltrapassarLimite()
+            throws Exception {
+
         // Arrange
         MedicaoRepository medicaoRepository = mock(MedicaoRepository.class);
         AlertaRepository alertaRepository = mock(AlertaRepository.class);
-        Sensor sensor = mock(Sensor.class);
 
-        when(sensor.estaFuncionando()).thenReturn(true);
-        when(sensor.lerValor()).thenReturn(95.0);
-        when(sensor.getTipo()).thenReturn("PLUVIOMETRO");
+        List<Medicao> historico = List.of(
+                new Medicao("PLUVIOMETRO", "Centro", 95.0),
+                new Medicao("PLUVIOMETRO", "Centro", 90.0)
+        );
+
+        when(medicaoRepository.findByTipoSensorOrderByDataHoraDesc(
+                "PLUVIOMETRO"
+        )).thenReturn(historico);
 
         ServicoMonitoramento servico =
                 new ServicoMonitoramento(medicaoRepository, alertaRepository);
 
-        ArgumentCaptor<Alerta> captor = ArgumentCaptor.forClass(Alerta.class);
+        ArgumentCaptor<Alerta> captor =
+                ArgumentCaptor.forClass(Alerta.class);
 
         // Act
-        servico.registrarMedicao(sensor, "Centro");
+        double previsao = servico.executarPrevisao(
+                "PLUVIOMETRO",
+                "COMPARACAO"
+        );
 
         // Assert
+        assertEquals(100.0, previsao, 0.001);
+
         verify(alertaRepository).save(captor.capture());
 
-        assertEquals("CRITICO", captor.getValue().getNivel());
-        assertEquals("Centro", captor.getValue().getRegiao());
+        Alerta alertaGerado = captor.getValue();
+
+        assertEquals("CRITICO", alertaGerado.getNivel());
+        assertEquals("Centro", alertaGerado.getRegiao());
+
+        assertTrue(alertaGerado.getDescricao().contains("PLUVIOMETRO"));
+        assertTrue(alertaGerado.getDescricao().contains("100,00"));
+        assertTrue(alertaGerado.getDescricao().contains("90,00"));
     }
 }

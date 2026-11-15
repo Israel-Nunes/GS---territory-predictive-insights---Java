@@ -15,19 +15,20 @@
 
 O **Territory Predictive Insights (TPI)** é um sistema de monitoramento territorial desenvolvido em Java com Spring Boot, com o objetivo de acompanhar condições ambientais que podem indicar riscos de alagamentos e outros eventos relacionados ao clima.
 
-A aplicação simula sensores responsáveis por coletar informações de pluviometria, nível da água e umidade do solo. As medições são armazenadas em um banco de dados Oracle e utilizadas para gerar previsões e alertas, auxiliando na identificação de possíveis situações de risco.
+A aplicação simula sensores responsáveis por coletar informações de pluviometria, nível da água e umidade do solo. As medições são armazenadas em um banco de dados e utilizadas para gerar previsões e alertas, auxiliando na identificação de possíveis situações de risco.
 
-A proposta é transformar dados ambientais em informações úteis para apoiar a tomada de decisão e contribuir para a prevenção de desastres.
+O sistema foi pensado para apoiar prefeituras, equipes da Defesa Civil, organizações comunitárias e associações de bairro na identificação de condições ambientais que merecem atenção. Dessa forma, as informações podem auxiliar decisões relacionadas ao monitoramento territorial e à prevenção de possíveis desastres.
 
 ## 2. Funcionalidades
 
 - Simulação de três tipos de sensores: pluviômetro, nível da água e umidade do solo.
 - Verificação do status operacional dos sensores.
 - Registro e validação de medições ambientais.
-- Armazenamento persistente de medições e alertas no Oracle.
+- Armazenamento de medições e alertas utilizando Spring Data JPA.
 - Previsões utilizando média móvel e comparação de medições.
 - Geração automática de alertas nos níveis ATENÇÃO, ALERTA e CRÍTICO.
-- Consulta ao histórico de medições e aos alertas registrados.
+- Consulta ao histórico de medições por sensor ou de forma geral.
+- Consulta aos alertas registrados.
 - Visualização do status geral do sistema.
 - Gerenciamento dos limites de alerta por meio de código de acesso.
 
@@ -36,7 +37,8 @@ A proposta é transformar dados ambientais em informações úteis para apoiar a
 - **Java 17:** linguagem de programação.
 - **Spring Boot 4.1.2:** estrutura principal da aplicação.
 - **Spring Data JPA:** persistência e comunicação com o banco de dados.
-- **Oracle Database:** armazenamento das medições e dos alertas.
+- **Oracle Database:** banco de dados principal.
+- **H2 Database:** banco em memória para execução e demonstração do projeto.
 - **Maven:** gerenciamento de dependências e execução do projeto.
 - **JUnit 5:** testes automatizados.
 - **Mockito:** simulação de dependências durante os testes.
@@ -75,32 +77,29 @@ Foram utilizados dois padrões criacionais:
 
 ## 7. Banco de dados e persistência
 
-O projeto utiliza Oracle Database com Spring Data JPA para persistência dos dados.
+O projeto utiliza Spring Data JPA para persistência dos dados, com duas opções de banco:
+
+- **Oracle Database:** opção principal, permitindo persistência dos dados entre diferentes execuções.
+- **H2 Database:** opção em memória, disponibilizada para facilitar a execução e avaliação do projeto sem necessidade de configurar um banco externo.
 
 Foram implementadas duas entidades principais:
 
 - **Medicao:** armazena o tipo de sensor, a região, o valor medido e a data e hora do registro.
 - **Alerta:** armazena a região, o nível do alerta, a descrição e a data e hora de sua geração.
 
-Os dados são persistidos no banco, permitindo consultar o histórico mesmo após encerrar e iniciar novamente a aplicação.
-
-### Configuração da conexão
-
-As informações de conexão devem ser configuradas no arquivo:
-
-`src/main/resources/application.properties`
-
-É necessário informar os dados de acesso ao Oracle disponibilizado pela FIAP. As credenciais devem permanecer em configuração local ou variáveis de ambiente, sem serem publicadas no repositório.
+As medições e os alertas são armazenados por meio dos repositórios Spring Data JPA.
 
 ## 8. Como executar o projeto
 
 ### Pré-requisitos
 
 - Java 17 ou superior.
-- Banco de dados Oracle acessível.
-- Maven ou Maven Wrapper.
+- Maven Wrapper, incluído no projeto.
+- Windows com PowerShell ou terminal compatível.
 
-### Passo a passo
+### Opção 1 — Executar com H2 (recomendado para avaliação)
+
+O H2 permite executar o projeto sem configurar credenciais ou possuir um banco Oracle. Os dados ficam armazenados em memória e são reiniciados quando a aplicação é encerrada.
 
 1. Clone o repositório:
 
@@ -114,19 +113,35 @@ As informações de conexão devem ser configuradas no arquivo:
    cd territory-predictive-insights
    ```
 
-3. Configure a conexão com o Oracle no arquivo `application.properties`.
-
-4. Execute os testes automatizados:
+3. Execute os testes automatizados:
 
    ```powershell
    .\mvnw.cmd test
    ```
 
-5. Inicie a aplicação com o menu habilitado:
+4. Inicie a aplicação com o perfil H2 e o menu habilitado:
 
    ```powershell
-   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--app.menu.enabled=true"
+   .\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=h2" "-Dspring-boot.run.arguments=--app.menu.enabled=true"
    ```
+
+5. Utilize as opções apresentadas no menu do terminal.
+
+### Opção 2 — Executar com Oracle
+
+Para utilizar o banco Oracle, configure as seguintes variáveis de ambiente:
+
+- `ORACLE_URL`: endereço de conexão com o banco.
+- `ORACLE_USERNAME`: usuário do banco.
+- `ORACLE_PASSWORD`: senha do banco.
+
+As credenciais não devem ser publicadas no repositório.
+
+Depois de configurar as variáveis, execute:
+
+```powershell
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--app.menu.enabled=true"
+```
 
 ## 9. Menu do sistema
 
@@ -172,6 +187,12 @@ O sistema deve se calar quando não houver informações suficientes ou quando a
 Outro ponto importante é compreender o que os dados não representam. Um único sensor por região não consegue descrever todas as condições ambientais de um território inteiro. O nível da água, a intensidade da chuva e a umidade do solo podem variar bastante entre diferentes pontos de uma mesma região. Além disso, fatores como drenagem, relevo, condições climáticas e infraestrutura urbana também influenciam os riscos de alagamento, mas não são completamente representados pelas medições utilizadas neste projeto.
 
 Por fim, os alertas devem apoiar a decisão humana, e não decidir no lugar das pessoas. Um alerta indica uma condição que merece atenção, mas não possui conhecimento completo sobre o contexto de cada localidade. A avaliação de profissionais e autoridades responsáveis continua sendo essencial para interpretar as informações, verificar as condições reais e definir as medidas necessárias. Dessa forma, o sistema funciona como uma ferramenta de apoio ao monitoramento e à prevenção, sem substituir a responsabilidade humana.
+
+## 12. Organização e desenvolvimento da equipe
+
+O desenvolvimento do projeto foi realizado de forma conjunta pelos dois integrantes. Ambos participaram das etapas de planejamento, definição das funcionalidades, implementação das classes e regras de negócio, integração com o banco de dados, desenvolvimento dos testes e elaboração da documentação.
+
+As decisões técnicas e a implementação foram construídas em colaboração, com participação de ambos ao longo de todo o desenvolvimento.
 
 ---
 

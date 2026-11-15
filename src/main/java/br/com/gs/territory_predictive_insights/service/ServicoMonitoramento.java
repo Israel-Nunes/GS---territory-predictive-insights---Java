@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 public class ServicoMonitoramento {
@@ -58,66 +59,7 @@ public class ServicoMonitoramento {
                 valor
         );
 
-        medicaoRepository.save(medicao);
-
-        gerarAlertaSeNecessario(
-                valor,
-                regiao,
-                sensor.getTipo()
-        );
-
-        return medicao;
-    }
-
-    private void gerarAlertaSeNecessario(
-            double valor,
-            String regiao,
-            String tipoSensor) {
-
-        String nivel = null;
-        String descricao = null;
-
-        double limiteAtencao =
-                configuracao.getLimiteAtencao(tipoSensor);
-
-        double limiteAlerta =
-                configuracao.getLimiteAlerta(tipoSensor);
-
-        double limiteCritico =
-                configuracao.getLimiteCritico(tipoSensor);
-
-        if (valor >= limiteCritico) {
-
-            nivel = "CRITICO";
-
-            descricao =
-                    "Valor crítico identificado. A região exige atenção imediata.";
-
-        } else if (valor >= limiteAlerta) {
-
-            nivel = "ALERTA";
-
-            descricao =
-                    "Valor elevado identificado. Recomenda-se verificar a região.";
-
-        } else if (valor >= limiteAtencao) {
-
-            nivel = "ATENCAO";
-
-            descricao =
-                    "Valor acima do limite de atenção. Continue monitorando.";
-        }
-
-        if (nivel != null) {
-
-            Alerta alerta = new Alerta(
-                    regiao,
-                    nivel,
-                    descricao
-            );
-
-            alertaRepository.save(alerta);
-        }
+        return medicaoRepository.save(medicao);
     }
 
     public double executarPrevisao(
@@ -136,20 +78,101 @@ public class ServicoMonitoramento {
             );
         }
 
+        // Considera a região da medição mais recente.
+        String regiao = medicoes.get(0).getRegiao();
+
         List<Double> historico = new ArrayList<>();
 
         for (Medicao medicao : medicoes) {
-            historico.add(medicao.getValor());
+
+            // Não mistura medições de regiões diferentes.
+            if (regiao.equals(medicao.getRegiao())) {
+                historico.add(medicao.getValor());
+            }
         }
 
-        // O repositório retorna da medição mais recente
-        // para a mais antiga. Invertendo, obtemos a ordem cronológica.
+        // O histórico precisa estar em ordem cronológica.
         Collections.reverse(historico);
 
         EstrategiaPrevisao estrategia =
                 FabricaPrevisao.criarEstrategia(tipoEstrategia);
 
-        return estrategia.prever(historico);
+        double previsao = estrategia.prever(historico);
+
+        if (!Double.isFinite(previsao) || previsao < 0) {
+            throw new FonteIndisponivelException(
+                    "Não foi possível gerar uma previsão válida."
+            );
+        }
+
+        // Os alertas agora são gerados com base na previsão.
+        gerarAlertaSeNecessario(
+                previsao,
+                regiao,
+                tipoSensor
+        );
+
+        return previsao;
+    }
+
+    private void gerarAlertaSeNecessario(
+            double previsao,
+            String regiao,
+            String tipoSensor) {
+
+        String nivel = null;
+        double limiteUltrapassado = 0;
+        String classificacao = null;
+
+        double limiteAtencao =
+                configuracao.getLimiteAtencao(tipoSensor);
+
+        double limiteAlerta =
+                configuracao.getLimiteAlerta(tipoSensor);
+
+        double limiteCritico =
+                configuracao.getLimiteCritico(tipoSensor);
+
+        if (previsao >= limiteCritico) {
+
+            nivel = "CRITICO";
+            limiteUltrapassado = limiteCritico;
+            classificacao = "limite crítico";
+
+        } else if (previsao >= limiteAlerta) {
+
+            nivel = "ALERTA";
+            limiteUltrapassado = limiteAlerta;
+            classificacao = "limite de alerta";
+
+        } else if (previsao >= limiteAtencao) {
+
+            nivel = "ATENCAO";
+            limiteUltrapassado = limiteAtencao;
+            classificacao = "limite de atenção";
+        }
+
+        if (nivel != null) {
+
+            String descricao = String.format(
+                    Locale.forLanguageTag("pt-BR"),
+                    "Previsão para o sensor %s na região %s: %.2f. "
+                            + "O valor previsto ultrapassou o %s de %.2f.",
+                    tipoSensor,
+                    regiao,
+                    previsao,
+                    classificacao,
+                    limiteUltrapassado
+            );
+
+            Alerta alerta = new Alerta(
+                    regiao,
+                    nivel,
+                    descricao
+            );
+
+            alertaRepository.save(alerta);
+        }
     }
 
     public List<Medicao> listarMedicoesPorSensor(String tipoSensor) {
