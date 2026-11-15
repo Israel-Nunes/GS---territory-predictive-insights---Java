@@ -178,15 +178,19 @@ Na última execução, foram obtidos os seguintes resultados:
 - **0 erros.**
 - **BUILD SUCCESS.**
 
-## 11. Reflexão crítica
+## 11. ## Reflexão Crítica
 
-Um sistema de previsão e monitoramento ambiental precisa reconhecer que seus resultados não representam a realidade de maneira absoluta. Por isso, é importante compreender suas limitações e identificar situações nas quais os dados disponíveis não são suficientes para gerar uma previsão confiável.
+**1. Quando o sistema deve se calar?**
 
-O sistema deve se calar quando não houver informações suficientes ou quando as medições apresentarem inconsistências. Por exemplo, um histórico com menos de cinco leituras pode não representar adequadamente o comportamento de uma região. Embora as estratégias implementadas consigam calcular uma previsão com um histórico menor, isso não significa que o resultado seja confiável. Em uma aplicação real, seria mais adequado sinalizar a insuficiência de dados e aguardar novas medições antes de apresentar uma previsão como confiável.
+O sistema deve evitar apresentar previsões como confiáveis quando não houver informações suficientes ou quando as medições apresentarem inconsistências. Por exemplo, um histórico com menos de cinco leituras pode não representar adequadamente o comportamento ambiental de uma região. Embora as estratégias implementadas consigam calcular previsões com um histórico menor, isso não garante a confiabilidade dos resultados. Em uma aplicação real, o mais adequado seria sinalizar a insuficiência de dados e aguardar novas medições antes de apresentar uma previsão como referência para uma decisão.
 
-Outro ponto importante é compreender o que os dados não representam. Um único sensor por região não consegue descrever todas as condições ambientais de um território inteiro. O nível da água, a intensidade da chuva e a umidade do solo podem variar bastante entre diferentes pontos de uma mesma região. Além disso, fatores como drenagem, relevo, condições climáticas e infraestrutura urbana também influenciam os riscos de alagamento, mas não são completamente representados pelas medições utilizadas neste projeto.
+**2. O que os dados não representam?**
 
-Por fim, os alertas devem apoiar a decisão humana, e não decidir no lugar das pessoas. Um alerta indica uma condição que merece atenção, mas não possui conhecimento completo sobre o contexto de cada localidade. A avaliação de profissionais e autoridades responsáveis continua sendo essencial para interpretar as informações, verificar as condições reais e definir as medidas necessárias. Dessa forma, o sistema funciona como uma ferramenta de apoio ao monitoramento e à prevenção, sem substituir a responsabilidade humana.
+Os dados utilizados não representam todas as condições ambientais de um território. Um único sensor por região não consegue descrever as variações existentes em diferentes pontos de uma mesma localidade. O volume de chuva, o nível da água e a umidade do solo podem apresentar diferenças significativas dependendo do local. Além disso, fatores como drenagem, relevo, infraestrutura urbana e condições climáticas também influenciam os riscos de alagamento, mas não são completamente representados pelas medições realizadas neste projeto. Portanto, os resultados devem ser interpretados considerando essas limitações.
+
+**3. Por que o alerta apoia a decisão humana, em vez de decidir por ela?**
+
+Os alertas funcionam como indicadores de situações que merecem atenção, mas não possuem informações suficientes para determinar, sozinhos, quais medidas devem ser tomadas. A avaliação de profissionais e autoridades responsáveis continua sendo essencial para analisar o contexto de cada região, verificar as condições reais e definir as ações necessárias. Dessa forma, o sistema atua como uma ferramenta de apoio ao monitoramento e à prevenção de riscos, contribuindo para decisões mais informadas sem substituir a análise e a responsabilidade humana.
 
 ## 12. Organização e desenvolvimento da equipe
 
