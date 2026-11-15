@@ -178,7 +178,7 @@ Na última execução, foram obtidos os seguintes resultados:
 - **0 erros.**
 - **BUILD SUCCESS.**
 
-## 11. ## Reflexão Crítica
+## 11. Reflexão Crítica
 
 **1. Quando o sistema deve se calar?**
 
